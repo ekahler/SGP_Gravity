@@ -1,11 +1,12 @@
-## Script to parse A10 files and create a csv file with the most important data. Only tested with
-## latest version of g processing (8.090227).
-##
-## 12/20/2010: Files in directories named "unpublished" are ignored.
-##
-## Jeff Kennedy
-## USGS
-## 7/29/09
+""""
+Script to parse A10 files and create a tab-delimited file with the most
+important data.
+
+Should work with g8 and g9.
+
+Jeff Kennedy
+USGS
+"""
 
 import string
 import re
@@ -17,11 +18,14 @@ gravity_data_archive = "E:\\Shared\\Gravity Data Archive\\A-10"
 ##gravity_data_archive = "X:\\Absolute Data\\A-10"
 root = Tkinter.Tk()
 root.withdraw()
-data_directory = tkFileDialog.askdirectory(parent=root,initialdir=gravity_data_archive)
+data_directory = tkFileDialog.askdirectory(
+    parent=root,initialdir=gravity_data_archive)
 a = data_directory.split('/')
-filesavename = os.getcwd()  + '/' + a[-1] + '_' + strftime("%Y%m%d-%H%M") + '.txt'
+
+# File save name is directory plus time and date
+filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
+strftime("%Y%m%d-%H%M") + '.txt'
 print filesavename
-# Each file is stored on one line of the data_array
 
 output_line=0
 inComments = 0
@@ -29,41 +33,40 @@ inComments = 0
 #open file for overwrite (change to "r" to append)
 fout = open(filesavename,"w")
 
-#write data descriptors
-fout.write("Created\tProject\tStation Name\tLat\tLong\tElev\tSetup Height\tTransfer Height\tActual Height\
-\tGradient\tNominalAP\tPolar(x)\tPolar(y)\tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tOffset\tGravity\tSet Scatter\tPrecision\tUncertainty\
-\tCollected\tProcessed\tTransfer ht corr\tGradient error\tPolar(x) error\tPolar(y) error\tComments")
-fout.write('\n')
+#write data descriptor file header
+fout.write("Created\tProject\tStation Name\tLat\tLong\tElev\tSetup Height\
+\tTransfer Height\tActual Height\tGradient\tNominalAP\tPolar(x)\tPolar(y)\
+\tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tOffset\tGravity\tSet Scatter\
+\tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\
+\tPolar(x) error\tPolar(y) error\tComments\n")
 
 # For each file in the data_directory
-for dirname,dirnames,filenames in os.walk(data_directory):  
-
+for dirname,dirnames,filenames in os.walk(data_directory):
     if 'unpublished' in dirnames:
         dirnames.remove('unpublished')
-        
     for filename in filenames:
         fname = os.path.join(dirname, filename)
-
         # If the file name ends in "project.txt"
         if string.find(fname,'project.txt') != -1:
-            
             project_file = open(fname)
             data_descriptor = 0
             data_array = ['a']*32
             # Look for these words in the g file
-            tags = re.compile(r'Project|Name|Created|DFFile|OLFile|Setht|Transfer|Actual|Date|Time|Offset|Gradient|Nominal|RubFrequency|Red|Blue|Gravity|Scatter|SetsColl|SetsProc|Precision|Total_unc')
+            tags = re.compile(r'Project|Name|Created|DFFile|OLFile|Setht\
+            |Transfer|Actual|Date|Time|Offset|Gradient|Nominal|RubFrequency|Red\
+            |Blue|Gravity|Scatter|SetsColl|SetsProc|Precision|Total_unc')
 
-            # 'Lat' is special because there's three data on the same line (Lat, Long, Elev)
+            # 'Lat' is special because there are three data on the same line:
+            # (Lat, Long, Elev)
             Lat_tag = re.compile(r'Lat')
-            
+
             #'Polar' is also special, for the same reason
             Pol_tag = re.compile(r'Polar')
-            
-            Comment_tag = re.compile(r'Comments')
-            
-            for line in project_file:
 
-                # Change up some text in the g file to make it easier to parse (remove duplicates, etc.)
+            Comment_tag = re.compile(r'Comments')
+            for line in project_file:
+                # Change up some text in the g file to make it easier to parse
+                # (remove duplicates, etc.)
                 line = string.strip(line)
                 line = string.replace(line,'\n\n','\n')
                 line = string.replace(line,":  ",": ")
@@ -92,7 +95,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 line = string.replace(line,"Number of Sets Collected:","SetsColl")
                 line = string.replace(line,"Number of Sets Processed:","SetsProc")
                 line = string.replace(line,"Polar Motion:","PolMotC") # This is the PM error, not the values
-                line = string.replace(line,"Barometric Pressure:","")    
+                line = string.replace(line,"Barometric Pressure:","")
                 line = string.replace(line,"System Setup:","")
                 line = string.replace(line,"Total Uncertainty:","Total_unc")
                 line = string.replace(line,"Measurement Precision:","Precision")
@@ -105,11 +108,11 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Lat_tag_found = re.search(Lat_tag,line)
                 Pol_tag_found = re.search(Pol_tag,line)
                 Comment_tag_found = re.search(Comment_tag,line)
-                
+
                 if tags_found != None:
                     data_array[data_descriptor] = line_elements[1]
                     data_descriptor = data_descriptor + 1
-                    
+
                 if Lat_tag_found != None:
                     data_array[data_descriptor] = line_elements[1]
                     data_descriptor = data_descriptor+1
@@ -117,31 +120,33 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                     data_descriptor = data_descriptor+1
                     data_array[data_descriptor] = line_elements[5]
                     data_descriptor = data_descriptor+1
-                    
+
                 if Pol_tag_found != None:
                     data_array[data_descriptor] = line_elements[1]
                     data_descriptor = data_descriptor+1
                     data_array[data_descriptor] = line_elements[3]
-                    data_descriptor = data_descriptor+1      
-                    
+                    data_descriptor = data_descriptor+1
+
                 if inComments > 0:
                     comments = comments + line
                     if inComments > 1:
                         comments = comments + ' | '
                     inComments += inComments
-                    
+
                 if Comment_tag_found != None:
                     inComments = 1
-                    comments = ''                 
-#            print comments
-#            print data_array
-#            print data_descriptor
-            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'!$F$1:$G$20000,2,FALSE)-L"+`output_line+2`
+                    comments = ''
+            # This adds an Excel formula that looks up the correct polar motion
+            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",\
+            '\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'\
+            !$F$1:$G$20000,2,FALSE)-L"+`output_line+2`
             data_descriptor = data_descriptor+1
-            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'!$F$1:$I$20000,4,FALSE)-M"+`output_line+2`        
+            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",\
+            '\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'\
+            !$F$1:$I$20000,4,FALSE)-M"+`output_line+2`
             data_descriptor = data_descriptor+1
             data_array[data_descriptor] = comments
-            
+
             project_file.close()
             output_line = output_line +1
 
@@ -150,5 +155,3 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 fout.write(eachelement + "\t")
             fout.write('\n')
 fout.close()
-
-
