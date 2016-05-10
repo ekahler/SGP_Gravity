@@ -37,7 +37,7 @@ fout = open(filesavename,"w")
 fout.write("Created\tProject\tStation Name\tLat\tLong\tElev\tSetup Height\
 \tTransfer Height\tActual Height\tGradient\tNominalAP\tPolar(x)\tPolar(y)\
 \tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tOffset\tGravity\tSet Scatter\
-\tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\
+\tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\tUnc. due to transfer\
 \tPolar(x) error\tPolar(y) error\tComments\n")
 
 # For each file in the data_directory
@@ -49,12 +49,12 @@ for dirname,dirnames,filenames in os.walk(data_directory):
         # If the file name ends in "project.txt"
         if string.find(fname,'project.txt') != -1:
             project_file = open(fname)
-            data_descriptor = 0
+            col_idx = 0
             data_array = ['a']*32
             # Look for these words in the g file
-            tags = re.compile(r'Project|Name|Created|DFFile|OLFile|Setht\
-            |Transfer|Actual|Date|Time|Offset|Gradient|Nominal|RubFrequency|Red\
-            |Blue|Gravity|Scatter|SetsColl|SetsProc|Precision|Total_unc')
+            tags = re.compile(r'Project|Name|Created|Setht' +
+            r'|Transfer|Actual|Date|Time|Offset|Gradient|Nominal|RubFrequency|Red' +
+            r'|Blue|GravValue|Scatter|SetsColl|SetsProc|Precision|Total_unc')
 
             # 'Lat' is special because there are three data on the same line:
             # (Lat, Long, Elev)
@@ -62,6 +62,9 @@ for dirname,dirnames,filenames in os.walk(data_directory):
 
             #'Polar' is also special, for the same reason
             Pol_tag = re.compile(r'Polar')
+
+            #
+            File_tag = re.compile(r'DFFile|OLFile')
 
             Comment_tag = re.compile(r'Comments')
             for line in project_file:
@@ -99,6 +102,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 line = string.replace(line,"System Setup:","")
                 line = string.replace(line,"Total Uncertainty:","Total_unc")
                 line = string.replace(line,"Measurement Precision:","Precision")
+                line = string.replace(line,"Gravity:","GravValue")
                 line = string.replace(line,":","")
                 line = string.replace(line,",","")
                 line_elements = string.split(line," ")
@@ -108,24 +112,36 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Lat_tag_found = re.search(Lat_tag,line)
                 Pol_tag_found = re.search(Pol_tag,line)
                 Comment_tag_found = re.search(Comment_tag,line)
+                File_tag_found = re.search(File_tag,line)
 
                 if tags_found != None:
-                    data_array[data_descriptor] = line_elements[1]
-                    data_descriptor = data_descriptor + 1
+                    print line_elements
+                    data_array[col_idx] = line_elements[1]
+                    col_idx = col_idx + 1
 
                 if Lat_tag_found != None:
-                    data_array[data_descriptor] = line_elements[1]
-                    data_descriptor = data_descriptor+1
-                    data_array[data_descriptor] = line_elements[3]
-                    data_descriptor = data_descriptor+1
-                    data_array[data_descriptor] = line_elements[5]
-                    data_descriptor = data_descriptor+1
+                    data_array[col_idx] = line_elements[1]
+                    col_idx += 1
+                    data_array[col_idx] = line_elements[3]
+                    col_idx += 1
+                    data_array[col_idx] = line_elements[5]
+                    col_idx += 1
 
                 if Pol_tag_found != None:
-                    data_array[data_descriptor] = line_elements[1]
-                    data_descriptor = data_descriptor+1
-                    data_array[data_descriptor] = line_elements[3]
-                    data_descriptor = data_descriptor+1
+                    data_array[col_idx] = line_elements[1]
+                    col_idx += 1
+                    data_array[col_idx] = line_elements[3]
+                    col_idx += 1
+
+                if File_tag_found != None:
+                    str_out = ''
+                    for idx, element in enumerate(line_elements):
+                        if idx > 0:
+                            str_out += element
+                            str_out += ' '
+                    str_out = str_out[:-1]
+                    data_array[col_idx] = str_out
+                    col_idx += 1
 
                 if inComments > 0:
                     comments = comments + line
@@ -137,15 +153,15 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                     inComments = 1
                     comments = ''
             # This adds an Excel formula that looks up the correct polar motion
-            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",\
-            '\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'\
-            !$F$1:$G$20000,2,FALSE)-L"+`output_line+2`
-            data_descriptor = data_descriptor+1
-            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",\
-            '\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'\
-            !$F$1:$I$20000,4,FALSE)-M"+`output_line+2`
-            data_descriptor = data_descriptor+1
-            data_array[data_descriptor] = comments
+            data_array[col_idx] = "=VLOOKUP(S"+`output_line+2`+\
+            ",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            "!$F$1:$G$20000,2,FALSE)-L"+`output_line+2`
+            col_idx += 1
+            data_array[col_idx] = "=VLOOKUP(S"+`output_line+2`+\
+            ",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            "!$F$1:$I$20000,4,FALSE)-M"+`output_line+2`
+            col_idx += 1
+            data_array[col_idx] = comments
 
             project_file.close()
             output_line = output_line +1
@@ -154,4 +170,5 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             for eachelement in data_array:
                 fout.write(eachelement + "\t")
             fout.write('\n')
+            print 'break'
 fout.close()
