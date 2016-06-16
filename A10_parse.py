@@ -23,8 +23,8 @@ data_directory = tkFileDialog.askdirectory(
 a = data_directory.split('/')
 
 ### For testing
-data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
-a = ['junk','TAMA']
+# data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
+# a = ['junk','TAMA']
 
 # File save name is directory plus time and date
 filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
