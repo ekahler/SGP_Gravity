@@ -29,7 +29,6 @@ a = data_directory.split('/')
 # File save name is directory plus time and date
 filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
 strftime("%Y%m%d-%H%M") + '.txt'
-print filesavename
 
 output_line=0
 inComments = 0
@@ -152,15 +151,12 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                     data_array.append(line_elements[1])
 
                 if Delta_tag_found != None:
-                    print data_array
                     dtf = True
                     df = " ".join(line_elements[1:])
-                    # print data_array
 
                 if OL_tag_found != None:
                     if dtf == True:
                         data_array.append(df)
-                        # print data_array
                     else:
                         data_array.append('-999')
                     data_array.append(" ".join(line_elements[1:]))
@@ -170,7 +166,6 @@ for dirname,dirnames,filenames in os.walk(data_directory):
 
                 if tags_found != None:
                     data_array.append(line_elements[1])
-                    # print data_array
 
                 if Lat_tag_found != None:
                     data_array.append(line_elements[1])
@@ -218,5 +213,4 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             for eachelement in data_array:
                 fout.write(eachelement + "\t")
             fout.write('\n')
-            print 'break'
 fout.close()
