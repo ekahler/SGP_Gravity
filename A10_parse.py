@@ -218,4 +218,5 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             for eachelement in data_array:
                 fout.write(eachelement + "\t")
             fout.write('\n')
+            print 'break'
 fout.close()
