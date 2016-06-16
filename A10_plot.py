@@ -7,14 +7,14 @@
 #
 # plt.savefig('\path\to\savefile.svg')
 #
-# SVG format inmports correctly into Illustrator. If using a different format,
+# SVG format imports correctly into Illustrator. If using a different format,
 # one might need to change the line at the end ('plt.rcParams(...)') to a
 # different file type.
 #
 # NB: Error bars are fixed at +/-10 uGal
 #
 # Jeff Kennedy, USGS
-# Jan. 29, 2015
+
 
 from numpy import mod
 import pylab as plt
@@ -65,6 +65,7 @@ with open(data_file) as fp:
     for line in fp:
         a = line.split("\t")
         sta = a[sta_col]
+        print sta
         sta_index = stations.index(sta)
         # using the dateutil parser we can plot dates directly
         data[sta_index][0].append(parser.parse(a[date_col]))
@@ -100,7 +101,7 @@ for i in range(nfigs):
             if start_month == 1:
                 start_year = start_year-1
             if end_month == 12:
-	        end_year = end_year + 1
+                end_year = end_year + 1
             xticks = []
             for iii in range(start_year,end_year+2):
                 xticks.append(datetime.datetime(iii,1,1))

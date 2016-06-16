@@ -22,6 +22,10 @@ data_directory = tkFileDialog.askdirectory(
     parent=root,initialdir=gravity_data_archive)
 a = data_directory.split('/')
 
+### For testing
+data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
+a = ['junk','TAMA']
+
 # File save name is directory plus time and date
 filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
 strftime("%Y%m%d-%H%M") + '.txt'
@@ -36,7 +40,7 @@ fout = open(filesavename,"w")
 #write data descriptor file header
 fout.write("Created\tProject\tStation Name\tLat\tLong\tElev\tSetup Height\
 \tTransfer Height\tActual Height\tGradient\tNominalAP\tPolar(x)\tPolar(y)\
-\tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tOffset\tGravity\tSet Scatter\
+\tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tTime Offset\tGravity\tSet Scatter\
 \tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\
 \tPolar(x) error\tPolar(y) error\tComments\n")
 
@@ -48,14 +52,16 @@ for dirname,dirnames,filenames in os.walk(data_directory):
         fname = os.path.join(dirname, filename)
         # If the file name ends in "project.txt"
         if string.find(fname,'project.txt') != -1:
+            print fname
+            dtf = False
+            skip_grad = False
             project_file = open(fname)
             data_descriptor = 0
-            data_array = ['a']*32
+            data_array = [] #['a']*32
             # Look for these words in the g file
-            tags = re.compile(r'Project|Name|Created|DFFile|OLFile|Setht\
-            |Transfer|Actual|Date|Time|Offset|Gradient|Nominal|RubFrequency|Red\
-            |Blue|Gravity|Scatter|SetsColl|SetsProc|Precision|Total_unc')
-
+            tags = re.compile(r'Project|Name|Created|Setup'+
+            r'|Transfer|Actual|Date|Time|TimeOffset|Nominal|RubFrequency|Red'+
+            r'|Blue|Scatter|SetsColl|SetsProc|Precision|Total_unc')
             # 'Lat' is special because there are three data on the same line:
             # (Lat, Long, Elev)
             Lat_tag = re.compile(r'Lat')
@@ -63,7 +69,21 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             #'Polar' is also special, for the same reason
             Pol_tag = re.compile(r'Polar')
 
+            Version_tag = re.compile(r'Version')
+
+            # Apparently using a delta file is optional, it's not always written to the .project file
+            Delta_tag = re.compile(r'DFFile')
+            OL_tag = re.compile(r'OLFile')
+
+            Grav_tag = re.compile(r'Grv')
+            Grad_tag = re.compile(r'Gradient')
+
+            # This one, because "Gradient:" is repeated exactly in this section
+            Unc_tag = re.compile(r'Uncertainties')
+
+            # This deals with multi-line comments
             Comment_tag = re.compile(r'Comments')
+
             for line in project_file:
                 # Change up some text in the g file to make it easier to parse
                 # (remove duplicates, etc.)
@@ -73,18 +93,20 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 # Repeat to take care of ":   " (three spaces)
                 line = string.replace(line,":  ",": ")
                 line = string.replace(line,":  ",": ")
+                line = string.replace(line,"g Acquisition Version","Acq")
+                line = string.replace(line,"g Processing ","")
                 line = string.replace(line,"Project Name:","Project")
                 line = string.replace(line,"File Created:","Created")
-                line = string.replace(line,"Setup Height:","Setht")
+                line = string.replace(line,'Gravity Corrections','grvcorr')
+                line = string.replace(line," Height:",":")
                 line = string.replace(line,"Delta Factor Filename:","DFFile")
                 line = string.replace(line,"Ocean Load ON, Filename:","OLFile")
-                line = string.replace(line," Height:","")
                 line = string.replace(line,"Nominal Air Pressure:","Nominal")
                 line = string.replace(line,"Barometric Admittance Factor:","Admittance")
                 line = string.replace(line," Motion Coord:","")
                 line = string.replace(line,"Set Scatter:","Scatter")
                 line = string.replace(line,"Offset:","ofst")
-                line = string.replace(line,"Time Offset (D h:m:s):","Offset")
+                line = string.replace(line,"Time Offset (D h:m:s):","TimeOffset")
                 line = string.replace(line,"Ocean Load:","OLC")
                 line = string.replace(line,"Rubidium Frequency:","RubFrequency")
                 line = string.replace(line,"Blue Lock:","Blue")
@@ -92,6 +114,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 line = string.replace(line,"Red/Blue Separation:","Separation")
                 line = string.replace(line,"Red/Blue Interval:","Interval")
                 line = string.replace(line,"Gravity Corrections","Corrections")
+                line = string.replace(line,"Gravity:","Grv:")
                 line = string.replace(line,"Number of Sets Collected:","SetsColl")
                 line = string.replace(line,"Number of Sets Processed:","SetsProc")
                 line = string.replace(line,"Polar Motion:","PolMotC") # This is the PM error, not the values
@@ -99,7 +122,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 line = string.replace(line,"System Setup:","")
                 line = string.replace(line,"Total Uncertainty:","Total_unc")
                 line = string.replace(line,"Measurement Precision:","Precision")
-                line = string.replace(line,":","")
+                line = string.replace(line,":","",1)
                 line = string.replace(line,",","")
                 line_elements = string.split(line," ")
 
@@ -108,24 +131,63 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Lat_tag_found = re.search(Lat_tag,line)
                 Pol_tag_found = re.search(Pol_tag,line)
                 Comment_tag_found = re.search(Comment_tag,line)
+                Version_tag_found = re.search(Version_tag,line)
+                Delta_tag_found = re.search(Delta_tag,line)
+                OL_tag_found = re.search(OL_tag,line)
+                Grav_tag_found = re.search(Grav_tag,line)
+                Unc_tag_found = re.search(Unc_tag,line)
+                Grad_tag_found = re.search(Grad_tag,line)
+
+                if Unc_tag_found != None:
+                    skip_grad = True
+
+                if Grad_tag_found != None:
+                    if skip_grad == False:
+                        data_array.append(line_elements[1])
+
+                # Old g versions don't output Time Offset, which comes right before gravity
+                if Grav_tag_found != None:
+                    if version < 5:
+                        data_array.append('-999')
+                    data_array.append(line_elements[1])
+
+                if Delta_tag_found != None:
+                    print data_array
+                    dtf = True
+                    df = " ".join(line_elements[1:])
+                    # print data_array
+
+                if OL_tag_found != None:
+                    if dtf == True:
+                        data_array.append(df)
+                        # print data_array
+                    else:
+                        data_array.append('-999')
+                    data_array.append(" ".join(line_elements[1:]))
+
+                if Version_tag_found != None:
+                    version = float(line_elements[1])
 
                 if tags_found != None:
-                    data_array[data_descriptor] = line_elements[1]
-                    data_descriptor = data_descriptor + 1
+                    data_array.append(line_elements[1])
+                    # print data_array
 
                 if Lat_tag_found != None:
-                    data_array[data_descriptor] = line_elements[1]
-                    data_descriptor = data_descriptor+1
-                    data_array[data_descriptor] = line_elements[3]
-                    data_descriptor = data_descriptor+1
-                    data_array[data_descriptor] = line_elements[5]
-                    data_descriptor = data_descriptor+1
+                    data_array.append(line_elements[1])
+                    data_array.append(line_elements[3])
+                    data_array.append(line_elements[5])
+                    # This accomodates old versions of g. If these data are to be published,
+                    # though, they should be reprocessed in a more recent version.
+                    if version < 5:
+                        data_array.append('-999') # Setup Height
+                        data_array.append('-999') # Transfer Height
+                        data_array.append('-999') # Actual Height
 
                 if Pol_tag_found != None:
-                    data_array[data_descriptor] = line_elements[1]
-                    data_descriptor = data_descriptor+1
-                    data_array[data_descriptor] = line_elements[3]
-                    data_descriptor = data_descriptor+1
+                    data_array.append(line_elements[1])
+                    data_array.append(line_elements[3])
+                    # if version < 5:
+                    #     data_array.append('-999') # delta factor filename
 
                 if inComments > 0:
                     comments = comments + line
@@ -136,16 +198,18 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 if Comment_tag_found != None:
                     inComments = 1
                     comments = ''
+
+            # Old g versions don't output transfer height correction
+            if version < 5:
+                data_array.append('-999')
             # This adds an Excel formula that looks up the correct polar motion
-            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",\
-            '\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'\
-            !$F$1:$G$20000,2,FALSE)-L"+`output_line+2`
-            data_descriptor = data_descriptor+1
-            data_array[data_descriptor] = "=VLOOKUP(S"+`output_line+2`+",\
-            '\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'\
-            !$F$1:$I$20000,4,FALSE)-M"+`output_line+2`
-            data_descriptor = data_descriptor+1
-            data_array[data_descriptor] = comments
+            data_array.append("=VLOOKUP(S"+`output_line+2`+\
+            ",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            "!$F$1:$G$20000,2,FALSE)-L"+`output_line+2`)
+            data_array.append("=VLOOKUP(S"+`output_line+2`+\
+            ",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            "!$F$1:$I$20000,4,FALSE)-M"+`output_line+2`)
+            data_array.append(comments)
 
             project_file.close()
             output_line = output_line +1
