@@ -23,8 +23,8 @@ data_directory = tkFileDialog.askdirectory(
 a = data_directory.split('/')
 
 ### For testing
-# data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
-# a = ['junk','TAMA']
+data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
+a = ['junk','TAMA']
 
 # File save name is directory plus time and date
 filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
@@ -53,13 +53,14 @@ for dirname,dirnames,filenames in os.walk(data_directory):
         if string.find(fname,'project.txt') != -1:
             print fname
             dtf = False
+            olf = False
             skip_grad = False
             project_file = open(fname)
             data_descriptor = 0
             data_array = [] #['a']*32
             # Look for these words in the g file
             tags = re.compile(r'Project|Name|Created|Setup'+
-            r'|Transfer|Actual|Date|Time|TimeOffset|Nominal|RubFrequency|Red'+
+            r'|Transfer|Actual|Date|Time|TimeOffset|Nominal|Red'+
             r'|Blue|Scatter|SetsColl|SetsProc|Precision|Total_unc')
             # 'Lat' is special because there are three data on the same line:
             # (Lat, Long, Elev)
@@ -73,7 +74,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             # Apparently using a delta file is optional, it's not always written to the .project file
             Delta_tag = re.compile(r'DFFile')
             OL_tag = re.compile(r'OLFile')
-
+            Rub_tag = re.compile(r'RubFrequency')
             Grav_tag = re.compile(r'Grv')
             Grad_tag = re.compile(r'Gradient')
 
@@ -136,6 +137,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Grav_tag_found = re.search(Grav_tag,line)
                 Unc_tag_found = re.search(Unc_tag,line)
                 Grad_tag_found = re.search(Grad_tag,line)
+                Rub_tag_found = re.search(Rub_tag,line)
 
                 if Unc_tag_found != None:
                     skip_grad = True
@@ -155,11 +157,19 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                     df = " ".join(line_elements[1:])
 
                 if OL_tag_found != None:
+                    olf = True
+                    of = " ".join(line_elements[1:])
+
+                if Rub_tag_found != None:
                     if dtf == True:
                         data_array.append(df)
                     else:
                         data_array.append('-999')
-                    data_array.append(" ".join(line_elements[1:]))
+                    if olf == True:
+                        data_array.append(of)
+                    else:
+                        data_array.append('-999')
+                    data_array.append(line_elements[1])
 
                 if Version_tag_found != None:
                     version = float(line_elements[1])
