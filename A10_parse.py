@@ -23,8 +23,8 @@ data_directory = tkFileDialog.askdirectory(
 a = data_directory.split('/')
 
 ### For testing
-data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
-a = ['junk','TAMA']
+# data_directory = "E:\\Shared\\current\\python\\AZWSC_Gravity\\TAMA"
+# a = ['junk','TAMA']
 
 # File save name is directory plus time and date
 filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
@@ -175,7 +175,10 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                     version = float(line_elements[1])
 
                 if tags_found != None:
-                    data_array.append(line_elements[1])
+                    try:
+                        data_array.append(line_elements[1])
+                    except:
+                        data_array.append('-999')
 
                 if Lat_tag_found != None:
                     data_array.append(line_elements[1])
