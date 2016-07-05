@@ -212,10 +212,10 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 data_array.append('-999')
             # This adds an Excel formula that looks up the correct polar motion
             data_array.append("=VLOOKUP(S"+`output_line+2`+\
-            ",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            ",'\\\\Igswzcwwwsjken\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
             "!$F$1:$G$20000,2,FALSE)-L"+`output_line+2`)
             data_array.append("=VLOOKUP(S"+`output_line+2`+\
-            ",'\\\\Igswztwwwsjken2\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            ",'\\\\Igswzcwwwsjken\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
             "!$F$1:$I$20000,4,FALSE)-M"+`output_line+2`)
             data_array.append(comments)
 
