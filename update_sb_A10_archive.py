@@ -6,19 +6,22 @@ import os
 import string
 import sys
 from time import strftime
+import shutil
 
 sb = SbSession.SbSession()
 
 # master key to gravity data archive (i.e., https://www.sciencebase.gov/catalog/item/56e301cae4b0f59b85d3a346)
 gda_key = '56e301cae4b0f59b85d3a346'
 gda_path = '\\\\Igswztwwwsgrav\\Shared\\Gravity Data Archive\\Absolute Data\\A-10\\Final Data'  # Path on local computer
-gda_path = 'E:\\Shared\\current\\python\\AZWSC_Gravity'
+gda_path = 'E:\\Shared\\current\\python\\AZWSC_Gravity\\TestFiles'
 
 # Text file of directories to sync, 1 file per line
 sync_dir_file = 'directories_to_sync.txt'
 
 # Directory to temporarily download ScienceBase items. Items are deleted once they are synced.
 temp_dir = 'E:\\Shared\\current\\python\\AZWSC_Gravity\\tempsb'
+if not os.path.isdir(temp_dir):
+    os.mkdir(temp_dir)
 
 sb_grav_dic = {}
 sb_studyarea_dic = {}
@@ -34,8 +37,12 @@ out_messages = []
 out_sb_studyareas_created = []
 out_sb_stations_created = []
 out_files_overwritten = []
+out_files_not_uploaded = []
 
 log_file = 'GravityDataArchive_SBsync_' + strftime("%Y%m%d-%H%M") + '.txt'
+
+# Coordinates will be taken from the first g file for a station
+add_coordinates = True
 
 out_messages.append('Gravity Data Archive file sync')
 out_messages.append('Start: ' + strftime("%Y-%m-%d %H:%M:%S"))
@@ -79,7 +86,8 @@ for dirname, dirnames, filenames in os.walk(temp_dir):
         # Identify unique stations based on name, date, and g
         unique_key = (a.stationname, a.date, a.gravity)
         if unique_key not in sb_grav_dic:
-            sb_grav_dic[unique_key] = dirname.split('\\')[-2] + '\\' + dirname.split('\\')[-1] + '\\' + filename
+            filepath = dirname.split('\\')[-2] + '\\' + dirname.split('\\')[-1] + '\\' + filename
+            sb_grav_dic[unique_key] = filepath.upper()
         else:
             out_files_sb_duplicate.append(dirname.split('\\')[-2] + '\\' + dirname.split('\\')[-1] + '\\' + filename + ", " + sb_grav_dic[unique_key])
 
@@ -91,7 +99,7 @@ with open(os.path.join(gda_path, sync_dir_file)) as fid:
         local_study_area = local_study_area.strip()
         # Check if there is a SB item for the study area
         if local_study_area not in sb_studyarea_dic.values():
-            print 'Creating new SB item: ' + local_study_area
+            print 'Creating new SB study area: ' + local_study_area
             # if not, create SB item under GDA root level
             new_item = {'title': local_study_area,
                         'parentId': gda_key}
@@ -106,10 +114,13 @@ with open(os.path.join(gda_path, sync_dir_file)) as fid:
 
         # Iterate over local gda, check if they match files downloaded
         for dirname, dirnames, filenames in os.walk(os.path.join(gda_path, local_study_area)):
+            if 'unpublished' in dirnames:
+                dirnames.remove('unpublished')
             for filename in filenames:
                 fname = os.path.join(dirname, filename)
                 if string.find(fname, 'project.txt') != -1:
                     local_archive_dir = dirname.split('\\')[-3] + '\\' + dirname.split('\\')[-2] + '\\' + filename
+                    local_archive_dir= local_archive_dir.upper()
                     a = A10project()
                     a.read_project_dot_txt(os.path.join(dirname, filename))
                     unique_key = (a.stationname, a.date, a.gravity)
@@ -127,10 +138,10 @@ with open(os.path.join(gda_path, sync_dir_file)) as fid:
                             out_synced_files[unique_key] = sb_grav_dic[unique_key]
                             os.remove(os.path.join(temp_dir, sb_grav_dic[unique_key]))
                     elif unique_key in sb_grav_dic:  # there's already a file with the same name/date/g
-                        out_messages.append('SKIPPING LOCAL FILE '
+                        out_files_not_uploaded.append('LOCAL FILE '
                                             + dirname.split('\\')[-2] + '\\' + dirname.split('\\')[-1] + '\\'
                                             + filename + '\n'
-                                            + 'SAME AS SB FILE ' + '\\' + sb_grav_dic[unique_key])
+                                            + ' | SB FILE ' + sb_grav_dic[unique_key])
                     else:  # local study area\station\filename not found in ScienceBase, upload
                         station_exists = False
                         for st_key in sb_station_dic:
@@ -141,6 +152,8 @@ with open(os.path.join(gda_path, sync_dir_file)) as fid:
                         if not station_exists:
                             new_station = {'title': a.stationname,
                                            'parentId': studyarea_key}
+                            if add_coordinates:
+                                new_station['spatial'] = {'representationalPoint':[float(a.long), float(a.lat)]}
                             print 'Creating station: ' + a.stationname
                             new_station = sb.create_item(new_station)
                             st_key = (studyarea_key, new_station['id'])
@@ -161,6 +174,11 @@ for dirname, dirnames, filenames in os.walk(temp_dir):
 
 out_messages.append('Finished: ' + strftime("%Y-%m-%d %H:%M:%S"))
 
+os.rename(temp_dir,'junk')
+shutil.rmtree('junk')
+time.sleep(3)
+os.makedirs(temp_dir)
+
 with open(log_file, 'w') as fid_out:
     for line in out_messages:
         fid_out.write(line + '\n')
@@ -168,6 +186,14 @@ with open(log_file, 'w') as fid_out:
     fid_out.write('=====================================================================\n')
 
     fid_out.write('Duplicate files on ScienceBase, based on station name, date, and g:\n')
+    for line in out_files_sb_duplicate:
+        fid_out.write(line + '\n')
+    fid_out.write('\n')
+    fid_out.write('=====================================================================\n')
+
+    fid_out.write('Files skipped because there''s already a file with the same station name, date, and g\n')
+    fid_out.write('(May be flagged because the station name in the g file\n')
+    fid_out.write('differs from the station directory name)\n')
     for line in out_files_sb_duplicate:
         fid_out.write(line + '\n')
     fid_out.write('\n')
@@ -206,6 +232,8 @@ with open(log_file, 'w') as fid_out:
     fid_out.write('=====================================================================\n')
 
     fid_out.write('Files in ScienceBase, but not in local archive:\n')
+    fid_out.write('(May be flagged because the station name in the g file\n')
+    fid_out.write('differs from the station directory name)\n')
     for line in out_files_on_sb_not_local:
         fid_out.write(line + '\n')
     fid_out.write('\n')
