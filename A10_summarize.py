@@ -41,8 +41,9 @@ for dirname,dirnames,filenames in os.walk(data_directory):
         # If the file name ends in "project.txt"
         if string.find(fname,'project.txt') != -1:
             project_file = open(fname)
+            print fname
             data_descriptor = 0
-            data_list = ['a']*7
+            data_list = ['']*7
             # Look for these words in the g file
             tags = re.compile(r'Name|Setht|Date|Gravity|Scatter|SetsColl|SetsProc')
             inComments = 0
@@ -56,6 +57,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 # Repeat to take care of ":   " (three spaces)
                 line = string.replace(line,":  ",": ")
                 line = string.replace(line,":  ",": ")
+                line = string.replace(line,"Gravity Data Archive","GDA")
                 line = string.replace(line,"Project Name:","Project")
                 line = string.replace(line,"File Created:","Created")
                 line = string.replace(line,"Setup Height:","Setht")
@@ -91,6 +93,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Comment_tag_found = re.search(Comment_tag,line)
 
                 if tags_found != None:
+                    print line_elements
                     data_list[data_descriptor] = line_elements[1]
                     data_descriptor = data_descriptor + 1
 
