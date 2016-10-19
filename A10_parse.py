@@ -40,7 +40,7 @@ fout = open(filesavename,"w")
 fout.write("Created\tProject\tStation Name\tLat\tLong\tElev\tSetup Height\
 \tTransfer Height\tActual Height\tGradient\tNominalAP\tPolar(x)\tPolar(y)\
 \tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tTime Offset\tGravity\tSet Scatter\
-\tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\
+\tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\tBaro corr\
 \tPolar(x) error\tPolar(y) error\tComments\n")
 
 # For each file in the data_directory
@@ -61,7 +61,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             # Look for these words in the g file
             tags = re.compile(r'Project|Name|Created|Setup'+
             r'|Transfer|Actual|Date|Time|TimeOffset|Nominal|Red'+
-            r'|Blue|Scatter|SetsColl|SetsProc|Precision|Total_unc')
+            r'|Blue|Scatter|SetsColl|SetsProc|Precision|BarPresCorr|Total_unc')
             # 'Lat' is special because there are three data on the same line:
             # (Lat, Long, Elev)
             Lat_tag = re.compile(r'Lat')
@@ -118,7 +118,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 line = string.replace(line,"Number of Sets Collected:","SetsColl")
                 line = string.replace(line,"Number of Sets Processed:","SetsProc")
                 line = string.replace(line,"Polar Motion:","PolMotC") # This is the PM error, not the values
-                line = string.replace(line,"Barometric Pressure:","")
+                line = string.replace(line,"Barometric Pressure:","BarPresCorr")
                 line = string.replace(line,"System Setup:","")
                 line = string.replace(line,"Total Uncertainty:","Total_unc")
                 line = string.replace(line,"Measurement Precision:","Precision")
