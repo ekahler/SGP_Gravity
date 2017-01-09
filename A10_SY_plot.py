@@ -152,6 +152,7 @@ for idx, sta in enumerate(nwis_data):
                         plot_y.append(data[idx][1][g_idx])
                     else:
                         out_data = []
+                    break
                 else: # No water-level measurements are very close. Check if we can interpolate.
                     cont_gap, disc_gap = datetime.timedelta(days=1000000), datetime.timedelta(days=1000000)
                     if sta['continuous_x'] != []:  # calculate continuous gap
@@ -181,6 +182,7 @@ for idx, sta in enumerate(nwis_data):
                         x2 = sta['discrete_y'][idx_closest_pos_cont]
                     else:
                         print "no valid data to interpolate"
+
             plot_y = [(y-min(plot_y))/12.77 for y in plot_y]
             poly = np.polyfit(plot_x, plot_y, 1)
             cc = np.corrcoef(plot_x, plot_y)[0,1]
