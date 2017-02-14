@@ -73,7 +73,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             Version_tag = re.compile(r'Version')
 
             # Need this to accomodate station names with spaces
-            Name_tag = re.compile(r'Name')
+            NameProject_tag = re.compile(r'Name')
 
             # Apparently using a delta file is optional, it's not always written to the .project file
             Delta_tag = re.compile(r'DFFile')
@@ -142,7 +142,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Unc_tag_found = re.search(Unc_tag,line)
                 Grad_tag_found = re.search(Grad_tag,line)
                 Rub_tag_found = re.search(Rub_tag,line)
-                Name_tag_found = re.search(Name_tag,line)
+                Name_tag_found = re.search(NameProject_tag,line)
 
                 if Unc_tag_found != None:
                     skip_grad = True
@@ -179,15 +179,18 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 if Version_tag_found != None:
                     version = float(line_elements[1])
 
-                if Name_tag_found != None:
-                    name = ''
-                    name += line_elements[1].strip()
-                    if len(line_elements) > 2:
-                        for idx, item in enumerate(line_elements):
-                            if idx > 1:
-                                name += '_'
-                                name += item.strip()
-                    data_array.append(name)
+                if Name_tag_found is not None:
+                    try:
+                        name = ''
+                        name += line_elements[1].strip()
+                        if len(line_elements) > 2:
+                            for idx, item in enumerate(line_elements):
+                                if idx > 1:
+                                    name += '_'
+                                    name += item.strip()
+                        data_array.append(name)
+                    except:
+                        data_array.append('-999')
 
                 if tags_found != None:
                     try:
