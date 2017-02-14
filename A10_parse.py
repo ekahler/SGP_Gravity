@@ -15,11 +15,12 @@ import Tkinter, tkFileDialog
 from time import strftime
 
 gravity_data_archive = "E:\\Shared\\Gravity Data Archive\\A-10"
+pd = os.getcwd()
 ##gravity_data_archive = "X:\\Absolute Data\\A-10"
 root = Tkinter.Tk()
 root.withdraw()
 data_directory = tkFileDialog.askdirectory(
-    parent=root,initialdir=gravity_data_archive)
+    parent=root,initialdir=pd)
 a = data_directory.split('/')
 
 ### For testing
@@ -59,7 +60,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             data_descriptor = 0
             data_array = [] #['a']*32
             # Look for these words in the g file
-            tags = re.compile(r'Project|Name|Created|Setup'+
+            tags = re.compile(r'Project|Created|Setup'+
             r'|Transfer|Actual|Date|Time|TimeOffset|Nominal|Red'+
             r'|Blue|Scatter|SetsColl|SetsProc|Precision|BarPresCorr|Total_unc')
             # 'Lat' is special because there are three data on the same line:
@@ -70,6 +71,9 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             Pol_tag = re.compile(r'Polar')
 
             Version_tag = re.compile(r'Version')
+
+            # Need this to accomodate station names with spaces
+            Name_tag = re.compile(r'Name')
 
             # Apparently using a delta file is optional, it's not always written to the .project file
             Delta_tag = re.compile(r'DFFile')
@@ -138,6 +142,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Unc_tag_found = re.search(Unc_tag,line)
                 Grad_tag_found = re.search(Grad_tag,line)
                 Rub_tag_found = re.search(Rub_tag,line)
+                Name_tag_found = re.search(Name_tag,line)
 
                 if Unc_tag_found != None:
                     skip_grad = True
@@ -173,6 +178,16 @@ for dirname,dirnames,filenames in os.walk(data_directory):
 
                 if Version_tag_found != None:
                     version = float(line_elements[1])
+
+                if Name_tag_found != None:
+                    name = ''
+                    name += line_elements[1].strip()
+                    if len(line_elements) > 2:
+                        for idx, item in enumerate(line_elements):
+                            if idx > 1:
+                                name += '_'
+                                name += item.strip()
+                    data_array.append(name)
 
                 if tags_found != None:
                     try:
