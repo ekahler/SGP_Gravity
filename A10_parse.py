@@ -28,9 +28,18 @@ a = data_directory.split('/')
 # a = ['junk','TAMA']
 
 # File save name is directory plus time and date
-filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
-strftime("%Y%m%d-%H%M") + '.txt'
-
+print str(data_directory)
+if str.find(str(data_directory), 'Working') > 0:
+    filesavename = os.getcwd()  + '/' + a[-1] + '_Working_' +\
+      strftime("%Y%m%d-%H%M") + '.txt'
+elif str.find(str(data_directory), 'Final') > 0:
+    filesavename = os.getcwd()  + '/' + a[-1] + '_Final_' +\
+      strftime("%Y%m%d-%H%M") + '.txt'
+else:
+    filesavename = os.getcwd()  + '/' + a[-1] + '_' +\
+      strftime("%Y%m%d-%H%M") + '.txt'
+      
+      
 output_line=0
 inComments = 0
 
@@ -42,7 +51,7 @@ fout.write("Created\tProject\tStation Name\tLat\tLong\tElev\tSetup Height\
 \tTransfer Height\tActual Height\tGradient\tNominalAP\tPolar(x)\tPolar(y)\
 \tDF File\tOL File\tClock\tBlue\tRed\tDate\tTime\tTime Offset\tGravity\tSet Scatter\
 \tPrecision\tUncertainty\tCollected\tProcessed\tTransfer ht corr\tBaro corr\
-\tPolar(x) error\tPolar(y) error\tComments\n")
+\tPolar(x) error\tPolar(y) error\\tlaser(blue) error\tclock error\tComments\n")
 
 # For each file in the data_directory
 for dirname,dirnames,filenames in os.walk(data_directory):
@@ -230,11 +239,18 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 data_array.append('-999')
             # This adds an Excel formula that looks up the correct polar motion
             data_array.append("=VLOOKUP(S"+`output_line+2`+\
-            ",'\\\\Igswzcwwwsjken\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            ",'\\\\Igswzcwwwsjeffk\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
             "!$F$1:$G$20000,2,FALSE)-L"+`output_line+2`)
             data_array.append("=VLOOKUP(S"+`output_line+2`+\
-            ",'\\\\Igswzcwwwsjken\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
+            ",'\\\\Igswzcwwwsjeffk\Shared\Gravity\[finals.data.xlsx]Sheet1'"+\
             "!$F$1:$I$20000,4,FALSE)-M"+`output_line+2`)
+            data_array.append("=VLOOKUP(S"+`output_line+2`+\
+            ",'\\\\Igswztwwgszona\Gravity Data Archive\Absolute Data\A-10\Instrument Maintenance"+\
+            "\Calibrations\[A10-008 clock and laser calibrations.xlsx]calibrations'!$A$2:$D$20,3,TRUE)-Q"+`output_line+2`)
+            data_array.append("=VLOOKUP(S"+`output_line+2`+\
+	    ",'\\\\Igswztwwgszona\Gravity Data Archive\Absolute Data\A-10\Instrument Maintenance"+\
+            "\Calibrations\[A10-008 clock and laser calibrations.xlsx]calibrations'!$A$2:$D$20,2,TRUE)-P"+`output_line+2`)
+            
             data_array.append(comments)
 
             project_file.close()
