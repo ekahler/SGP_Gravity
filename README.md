@@ -1,5 +1,5 @@
-# AZWSC_Gravity
-Arizona Water Science Center gravity processing scripts
+# SGP_Gravity
+USGS Southwest Gravity Program gravity processing scripts
 
 * A10.py - given a project.txt file, returns an A10 python object with relevant information
 * A10_parse.py - creates a tab-separated file with relevant information from a specified directory of project.txt files.
