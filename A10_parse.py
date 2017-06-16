@@ -69,7 +69,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             data_descriptor = 0
             data_array = [] #['a']*32
             # Look for these words in the g file
-            tags = re.compile(r'Project|Created|Setup'+
+            tags = re.compile(r'Created|Setup'+
             r'|Transfer|Actual|Date|Time|TimeOffset|Nominal|Red'+
             r'|Blue|Scatter|SetsColl|SetsProc|Precision|BarPresCorr|Total_unc')
             # 'Lat' is special because there are three data on the same line:
@@ -82,7 +82,8 @@ for dirname,dirnames,filenames in os.walk(data_directory):
             Version_tag = re.compile(r'Version')
 
             # Need this to accomodate station names with spaces
-            NameProject_tag = re.compile(r'Name')
+            Project_tag = re.compile(r'Project')
+            Name_tag = re.compile(r'Name')
 
             # Apparently using a delta file is optional, it's not always written to the .project file
             Delta_tag = re.compile(r'DFFile')
@@ -151,7 +152,8 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 Unc_tag_found = re.search(Unc_tag,line)
                 Grad_tag_found = re.search(Grad_tag,line)
                 Rub_tag_found = re.search(Rub_tag,line)
-                Name_tag_found = re.search(NameProject_tag,line)
+                Name_tag_found = re.search(Name_tag,line)
+                Project_tag_found = re.search(Project_tag,line)
 
                 if Unc_tag_found != None:
                     skip_grad = True
@@ -188,7 +190,7 @@ for dirname,dirnames,filenames in os.walk(data_directory):
                 if Version_tag_found != None:
                     version = float(line_elements[1])
 
-                if Name_tag_found is not None:
+                if Name_tag_found is not None or Project_tag_found is not None:
                     try:
                         name = ''
                         name += line_elements[1].strip()
