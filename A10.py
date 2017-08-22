@@ -1,37 +1,8 @@
 import string
 import re
 
-class A10project(object):
-    created = None
-    project = None
-    stationname = None
-    lat = None
-    long = None
-    elev = None
-    setupht = None
-    transferht = None
-    actualht = None
-    gradient = None
-    nominalAP = None
-    polarx = None
-    polary = None
-    dffile = None
-    olfile = None
-    clock = None
-    blue = None
-    red = None
-    date = None
-    time = None
-    timeoffset = None
-    gravity = None
-    setscatter = None
-    precision = None
-    uncertainty = None
-    collected = None
-    processed = None
-    transferhtcorr = None
-    comments = None
 
+class A10project(object, fn=None):
     def __init__(self):
         self.created = None
         self.project = None
@@ -62,13 +33,14 @@ class A10project(object):
         self.processed = None
         self.transferhtcorr = None
         self.comments = None
+        if fn:
+            self.read_project_dot_txt(fn)
 
     def read_project_dot_txt(self, filename):
         dtf = False
         olf = False
         skip_grad = False
-        data_descriptor = 0
-        inComments = 0
+        in_comments = 0
         project_file = open(filename)
         data_array = []  # ['a']*32
         # Look for these words in the g file
@@ -77,25 +49,25 @@ class A10project(object):
                           r'|Blue|Scatter|SetsColl|SetsProc|Precision|Total_unc')
         # 'Lat' is special because there are three data on the same line:
         # (Lat, Long, Elev)
-        Lat_tag = re.compile(r'Lat')
+        lat_tag = re.compile(r'Lat')
 
         # 'Polar' is also special, for the same reason
-        Pol_tag = re.compile(r'Polar')
+        pol_tag = re.compile(r'Polar')
 
-        Version_tag = re.compile(r'Version')
+        version_tag = re.compile(r'Version')
 
         # Apparently using a delta file is optional, it's not always written to the .project file
-        Delta_tag = re.compile(r'DFFile')
-        OL_tag = re.compile(r'OLFile')
-        Rub_tag = re.compile(r'RubFrequency')
-        Grav_tag = re.compile(r'Grv')
-        Grad_tag = re.compile(r'Gradient')
+        delta_tag = re.compile(r'DFFile')
+        ol_tag = re.compile(r'OLFile')
+        rub_tag = re.compile(r'RubFrequency')
+        grav_tag = re.compile(r'Grv')
+        grad_tag = re.compile(r'Gradient')
 
         # This one, because "Gradient:" is repeated exactly in this section
-        Unc_tag = re.compile(r'Uncertainties')
+        unc_tag = re.compile(r'Uncertainties')
 
         # This deals with multi-line comments
-        Comment_tag = re.compile(r'Comments')
+        comment_tag = re.compile(r'Comments')
 
         for line in project_file:
             # Change up some text in the g file to make it easier to parse
@@ -141,59 +113,59 @@ class A10project(object):
 
             # Look for tags
             tags_found = re.search(tags, line)
-            Lat_tag_found = re.search(Lat_tag, line)
-            Pol_tag_found = re.search(Pol_tag, line)
-            Comment_tag_found = re.search(Comment_tag, line)
-            Version_tag_found = re.search(Version_tag, line)
-            Delta_tag_found = re.search(Delta_tag, line)
-            OL_tag_found = re.search(OL_tag, line)
-            Grav_tag_found = re.search(Grav_tag, line)
-            Unc_tag_found = re.search(Unc_tag, line)
-            Grad_tag_found = re.search(Grad_tag, line)
-            Rub_tag_found = re.search(Rub_tag, line)
+            lat_tag_found = re.search(lat_tag, line)
+            pol_tag_found = re.search(pol_tag, line)
+            comment_tag_found = re.search(comment_tag, line)
+            version_tag_found = re.search(version_tag, line)
+            delta_tag_found = re.search(delta_tag, line)
+            ol_tag_found = re.search(ol_tag, line)
+            grav_tag_found = re.search(grav_tag, line)
+            unc_tag_found = re.search(unc_tag, line)
+            grad_tag_found = re.search(grad_tag, line)
+            rub_tag_found = re.search(rub_tag, line)
 
-            if Unc_tag_found != None:
+            if unc_tag_found is not None:
                 skip_grad = True
 
-            if Grad_tag_found != None:
-                if skip_grad == False:
+            if grad_tag_found is not None:
+                if not skip_grad:
                     data_array.append(line_elements[1])
 
             # Old g versions don't output Time Offset, which comes right before gravity
-            if Grav_tag_found != None:
+            if grav_tag_found is not None:
                 if version < 5:
                     data_array.append('-999')
                 data_array.append(line_elements[1])
 
-            if Delta_tag_found != None:
+            if delta_tag_found is not None:
                 dtf = True
                 df = " ".join(line_elements[1:])
 
-            if OL_tag_found != None:
+            if ol_tag_found is not None:
                 olf = True
                 of = " ".join(line_elements[1:])
 
-            if Rub_tag_found != None:
-                if dtf == True:
+            if rub_tag_found is not None:
+                if dtf:
                     data_array.append(df)
                 else:
                     data_array.append('-999')
-                if olf == True:
+                if olf:
                     data_array.append(of)
                 else:
                     data_array.append('-999')
                 data_array.append(line_elements[1])
 
-            if Version_tag_found != None:
+            if version_tag_found is not None:
                 version = float(line_elements[1])
 
-            if tags_found != None:
+            if tags_found is not None:
                 try:
                     data_array.append(line_elements[1])
                 except:
                     data_array.append('-999')
 
-            if Lat_tag_found != None:
+            if lat_tag_found is not None:
                 data_array.append(line_elements[1])
                 data_array.append(line_elements[3])
                 data_array.append(line_elements[5])
@@ -204,18 +176,18 @@ class A10project(object):
                     data_array.append('-999')  # Transfer Height
                     data_array.append('-999')  # Actual Height
 
-            if Pol_tag_found != None:
+            if pol_tag_found is not None:
                 data_array.append(line_elements[1])
                 data_array.append(line_elements[3])
 
-            if inComments > 0:
-                comments = comments + line
-                if inComments > 1:
+            if in_comments > 0:
+                comments += line
+                if in_comments > 1:
                     comments += ' | '
-                inComments += inComments
+                in_comments += in_comments
 
-            if Comment_tag_found != None:
-                inComments = 1
+            if comment_tag_found is not None:
+                in_comments = 1
                 comments = ''
 
         data_array.append(comments)
@@ -254,4 +226,3 @@ class A10project(object):
         self.processed = data_array[26]
         self.transferhtcorr = data_array[27]
         self.comments = data_array[28]
-
