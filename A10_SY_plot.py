@@ -44,22 +44,35 @@ import datetime
 import tkFileDialog
 import matplotlib.dates as mdates
 import matplotlib.ticker as tkr
+import csv
+import os
 from get_nwis_data import get_nwis_data
 from dateutil import parser
 
+# Parameters than can be changed
 presentation_style = True  # Makes labels big
 cross_ref_file = 'SiteIDcrossref.csv'
 threshold = datetime.timedelta(days=5)  # If within a threshold, just take the nearest data point
 interpolate_threshold = datetime.timedelta(days = 50)  # otherwise, interpolate if the data gap is below a threshold
-color_by_trend = True
+write_output_to_file = True
 
 # Formats y-axis labels
 def func(x, pos):
     s = '{:0,d}'.format(int(x))
     return s
 
+def write_to_file(filesavename, station, g_date, g, gwl, code, gap, y1, y2):
+    with open(filesavename, 'a') as fn:
+        fn.write('{},{},{},{},{},{},{},{}\n'.format(station, g_date, g, gwl, code, gap, y1, y2))
+
 # Open dialog to specify input file. Alternatively, specify file directly.
 data_file = tkFileDialog.askopenfilename(title="Select text file to plot (from A10_parse.py)")
+
+if write_output_to_file:
+    out_file = data_file[:-4]
+    filesavename = str.replace(str(data_file), '.txt', '_SY.csv')
+    with open(filesavename, 'w+') as fn:
+        fn.write('Station,date,g,gwl,type,gap,start,end\n')
 # data_file = "SanPedro_qaqc.txt"
 
 # Matplotlibn interactive mode
@@ -134,9 +147,11 @@ for idx, sta in enumerate(nwis_data):
                     if min_delta_cont < min_delta_disc:
                         plot_x.append(sta['continuous_y'][idx_cont])
                         plot_y.append(grav_data[idx][1][g_idx])
+                        write_to_file(filesavename, sta['station'], g_date, plot_y[-1], plot_x[-1], 'C', min_delta_cont.days, '0', '0')
                     elif min_delta_cont > min_delta_disc:
                         plot_x.append(sta['discrete_y'][idx_disc])
                         plot_y.append(grav_data[idx][1][g_idx])
+                        write_to_file(filesavename, sta['station'], g_date, plot_y[-1], plot_x[-1], 'D', min_delta_disc.days, '0', '0')
                     continue
                 else: # No water-level measurements are very close. Check if we can interpolate.
                     interpolate = False
@@ -183,8 +198,13 @@ for idx, sta in enumerate(nwis_data):
                         plot_x.append(interpolated_dtw)
                         plot_y.append(grav_data[idx][1][g_idx])
                         print('Interpolated DTW at station {}, measurement on {}'.format(sta['station'], g_date))
+
                         print('Time gap = {}, WL change {} feet.'.format(gap, y2 - y1))
+                        if write_output_to_file:
+                            write_to_file(filesavename, sta['station'], g_date, plot_y[-1], plot_x[-1], 'I', gap.days, y1, y2)
                     else:
+                        if write_output_to_file:
+                            write_to_file(filesavename, sta['station'], g_date, grav_data[idx][1][g_idx], '0', 'N', '0', '0', '0')
                         print('no valid data to interpolate at station {}, measurement on {}'.format(sta['station'], g_date))
 
             if len(plot_y) > 1: # If there's only 1 data point, don't bother
@@ -211,6 +231,7 @@ for idx, sta in enumerate(nwis_data):
                 plt.figtext(0.25, 0.85, 'Sy = %0.2f' % poly[0])
                 plt.figtext(0.25, 0.81, 'r^2 = %0.2f' % cc)
                 plt.show()
+
 
 # # When saved, this exports fonts as fonts instead of paths:
 #         plt.rcParams['svg.fonttype'] = 'none'
