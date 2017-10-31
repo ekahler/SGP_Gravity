@@ -25,9 +25,11 @@ import math
 import matplotlib.dates as mdates
 import matplotlib.ticker as tkr
 
-YAXIS_LIMITS = 'loose'  # 'tight' or 'loose'
-YAXIS_FT_OF_WATER = True
+YAXIS_LIMITS = 'tight' #loose'  # 'tight' or 'loose'
+YAXIS_FT_OF_WATER = False
 ERROR_BAR = 10  # microGal
+XLIM = [parser.parse('2017-06-01'),parser.parse('2017-10-20')]
+altFmt = mdates.DateFormatter('%b-%d')
 
 # Formats y-axis labels
 def func(x, pos):
@@ -110,22 +112,27 @@ for i in range(nfigs):
         # Add commas to y-axis tick mark labels
                 # ax.yaxis.set_major_formatter(y_format)
         # Set x-axis tick labels to just show year
-                ax.xaxis.set_major_formatter(myFmt)
+               
 
         # Adjust ticks so they fall on Jan 1 and extend past the range of the data. If there
         # are data in January and December, add another year so that there is plenty of space.
-                start_month = data[figidx+ii][0][0].month
-                start_year = data[figidx+ii][0][0].year
-                end_month = data[figidx+ii][0][-1].month
-                end_year = data[figidx+ii][0][-1].year
-                if start_month == 1:
-                    start_year = start_year-1
-                if end_month == 12:
-                    end_year = end_year + 1
-                xticks = []
-                for iii in range(start_year,end_year+2):
-                    xticks.append(datetime.datetime(iii,1,1))
-                ax.set_xticks(xticks)
+                if XLIM:
+                    ax.set_xlim(XLIM)
+                    ax.xaxis.set_major_formatter(altFmt)
+                else:
+                    ax.xaxis.set_major_formatter(myFmt)
+                    start_month = data[figidx+ii][0][0].month
+                    start_year = data[figidx+ii][0][0].year
+                    end_month = data[figidx+ii][0][-1].month
+                    end_year = data[figidx+ii][0][-1].year
+                    if start_month == 1:
+                        start_year = start_year-1
+                    if end_month == 12:
+                        end_year = end_year + 1
+                    xticks = []
+                    for iii in range(start_year,end_year+2):
+                        xticks.append(datetime.datetime(iii,1,1))
+                    ax.set_xticks(xticks)
                 plt.title(stations[figidx+ii])
                 if YAXIS_LIMITS == 'loose':
                     max_abs_lim = max(abs(v) for v in ax.get_ylim())
@@ -135,6 +142,7 @@ for i in range(nfigs):
                     plt.ylabel('Storage change,\nin feet of water')
                 else:
                     plt.ylabel('Gravity change,\n in microGal')
+
                 plt.draw()
                 
         plt.subplots_adjust(bottom=0.25, hspace=0.4, left=0.25, right=0.85)
