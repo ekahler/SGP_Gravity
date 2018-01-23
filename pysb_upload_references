@@ -1,0 +1,44 @@
+import xml.etree.ElementTree
+import pysb
+
+sb = pysb.SbSession()
+sb.login('jkennedy@usgs.gov', 'xxxxx')
+
+test_pid = '5a614dafe4b06e28e9c26016'
+pid_319 = '55036962e4b02e76d75652b5'
+
+input_file = 'c:\\users\\jkennedy\\Downloads\\EESpecialIssue.xml'
+ref_path = 'E:\\shared\\current\\MendeleyReferences\\'
+e = xml.etree.ElementTree.parse(input_file).getroot()
+
+author_list = []
+
+records = e[0]
+for record in records.getchildren():
+    c = record.find('contributors')
+    authors = c.find('authors')
+    for author in authors:
+        author_list.append(author.text + ';')
+    # # Get file name
+    # f = record.find('urls')
+    # g = f.find('pdf-urls')
+    # h = g.find('url')
+    # i = h.text
+    # j = i.split('//')
+    # pdf = j[1]
+    # pdf_elems = pdf.split('_')
+    # item_name = pdf_elems[-1]
+    # item_name = item_name.replace('.pdf', '')
+    #
+    # abstract = record.find('abstract')
+    # sb_json = sb.upload_file_and_create_item(pid_319, ref_path + pdf)
+    #
+    # if abstract is not None:
+    #     sb_json['body'] = abstract.text
+    #
+    # sb_json['title'] = item_name
+    #
+    # sb.update_item(sb_json)
+
+
+
