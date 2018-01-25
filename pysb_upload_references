@@ -1,44 +1,145 @@
+# Script to upload pdf manuscripts to ScienceBase. The list of manuscripts is exported from Mendeley, and pdf's are
+# retrieved from wherever Mendeley stores files on the local file system.
 import xml.etree.ElementTree
 import pysb
+import os
+import unidecode
 
 sb = pysb.SbSession()
 sb.login('jkennedy@usgs.gov', 'xxxxx')
 
-test_pid = '5a614dafe4b06e28e9c26016'
-pid_319 = '55036962e4b02e76d75652b5'
+manuscripts_dir = '55036962e4b02e76d75652b5'
+test2_pid = '5a6a0f7ee4b06e28e9c8a6aa'
 
-input_file = 'c:\\users\\jkennedy\\Downloads\\EESpecialIssue.xml'
+# ScienceBase partyIDs, so that authors are matched up with their ScienceBase ID.
+author_crossref_file = 'EEAuthors.txt'
+
+# Xml file exported from Mendeley
+input_file = 'c:\\users\\jkennedy\\Downloads\\EESpecialIssue1.xml'
+
+# Directory where Mendeley references are stored
 ref_path = 'E:\\shared\\current\\MendeleyReferences\\'
-e = xml.etree.ElementTree.parse(input_file).getroot()
 
-author_list = []
+xml_root = xml.etree.ElementTree.parse(input_file).getroot()
 
-records = e[0]
+author_ids = dict()
+
+# Parse author cross-ref file to dict
+with open(author_crossref_file, 'r') as fid:
+    for line in fid:
+        line_elements = line.split(';')
+        author_ids[line_elements[0]] = line_elements[1].strip()
+
+records = xml_root[0]
 for record in records.getchildren():
+    # Get authors
     c = record.find('contributors')
     authors = c.find('authors')
+    author_json = list()
+    author_list = []
     for author in authors:
-        author_list.append(author.text + ';')
-    # # Get file name
-    # f = record.find('urls')
-    # g = f.find('pdf-urls')
-    # h = g.find('url')
-    # i = h.text
-    # j = i.split('//')
-    # pdf = j[1]
-    # pdf_elems = pdf.split('_')
-    # item_name = pdf_elems[-1]
-    # item_name = item_name.replace('.pdf', '')
-    #
-    # abstract = record.find('abstract')
-    # sb_json = sb.upload_file_and_create_item(pid_319, ref_path + pdf)
-    #
-    # if abstract is not None:
-    #     sb_json['body'] = abstract.text
-    #
-    # sb_json['title'] = item_name
-    #
-    # sb.update_item(sb_json)
+        author_list.append(author.text)
+        if author_ids[author.text] != '0':
+            try:
+                contact = sb.get_directory_contact(author_ids[author.text])
+            except:
+                print('BA ' + author.text)
+            author_json.append(sb.get_sbcontact_from_directory_contact(contact, 'Author'))
+        else:
+            name_json = dict()
+            name_json["name"] = author.text
+            name_json["type"] = "Author"
+            author_json.append(name_json)
+            
+    # Get title
+    titles_tag = record.find('titles')
+    title_tag = titles_tag.find('title')
+    title = title_tag.text
+
+    # Get year
+    dates_tag = record.find('dates')
+    year_tag = dates_tag.find('year')
+    year = year_tag.text
+
+    # Get pages
+    pages_tag = record.find('pages')
+    pages = pages_tag.text
+
+    # Get volume
+    vol_tag = record.find('volume')
+    volume = vol_tag.text
+
+    # Get journal name
+    per_tag = record.find('periodical')
+    journal_tag = per_tag.find('full-title')
+    journal = journal_tag.text
+
+    # Get doi number
+    doi_tag = record.find('electronic-resource-num')
+    doi = doi_tag.text
+
+    # Citation text
+    citation = ''
+    for author in author_list:
+        citation += author
+        citation += ', '
+    citation += year
+    citation += ', '
+    citation += title
+    citation += ': '
+    citation += journal
+    citation += ', vol. '
+    citation += volume
+    citation += ', p. '
+    citation += pages
+    citation += '. http://doi.org/'
+    citation += doi
+
+    # Get keywords
+    keywords_list = list()
+    keywords_tag = record.find('keywords')
+    for keyword in keywords_tag:
+        key_dict = dict()
+        key_dict["name"] = keyword.text
+        keywords_list.append(key_dict)
+    keywords_list.append({"name":"Ecol. Engr. Special Issue"})
+
+    # Get file name
+    urls_tag = record.find('urls')
+    g = urls_tag.find('pdf-urls')
+    h = g.find('url')
+    i = h.text
+    j = i.split('//')
+    pdf = j[1]
+
+    # Get abstract
+    abstract = record.find('abstract')
+
+    # Upload file
+    sb_json = None
+    try:
+        sb_json = sb.upload_file_and_create_item(manuscripts_dir, ref_path + pdf)
+        print(title)
+    except:
+        # upload_file_and_create_item doesn't seem to work on files with accented letters. This block copies the 
+        # original file into one with a unidecoded file name, then uploads it to ScienceBase.
+        os.system('cp "' + ref_path + pdf + '" "' + ref_path + unidecode.unidecode(pdf) +'"')
+        sb_json = sb.upload_file_and_create_item(manuscripts_dir, ref_path + unidecode.unidecode(pdf))
+        print('B ' + title)
+
+    # After creating a new item, update the json.
+    if sb_json is not None:
+        if abstract is not None:
+            sb_json['body'] = abstract.text
+        if citation is not None:
+            sb_json['citation'] = citation
+        if author_list is not None:
+            sb_json['contacts'] = author_json
+        if keywords_list is not None:
+            sb_json['tags'] = keywords_list
+        sb_json['title'] = title
+        sb.update_item(sb_json)
+
 
 
 
