@@ -23,9 +23,9 @@
 # Jeff Kennedy
 # USGS
 # 
-# Updated 11/2/2018: Tkinter now tkinter, specify filedialog as import (line 39). Updated line 61 to current tkinter syntax. 
-# Added lines 104-106 to check for previous correction (existing 'original.txt' file) and break loop if found.
-# Changed line 108 from <if string.find(fname, 'project.txt') != -1:> to <elif fname.find('project.txt') != -1:>
+# Updated 11/2/2018: Tkinter now tkinter, specify filedialog as import (lines 38-39). Updated line 61 to current tkinter syntax. 
+# Added lines 98-100 to check for previous correction (existing 'original.txt' file) and break loop if found.
+# Changed line 101 from <if string.find(fname, 'project.txt') != -1:> to <elif fname.find('project.txt') != -1:>
 # Tested on partial copy of TAMA directory on 11/2/2018. Test successful.
 # Tested on a directory with some files updated and some not - by the timestamp of files 
 # it only applied the correction to previously uncorrected project.txt files.
@@ -64,13 +64,7 @@ data_directory = filedialog.askdirectory(
     parent=root,initialdir=pwd)
 #data_directory = u'\\\\Igswztwwgszona\\Gravity Data Archive\\Absolute Data\\A-10\\Final Data\\Big Chino\\PRESCOTT CB\\'
 
-laser_corr, drift_rate, elapsed_days = -999, -999, -999
-sm_at_time_of_g, sm, sm_corr = -999, -999, -999
-
-
 # In[51]:
-
-
 
 laser_corr, drift_rate, elapsed_days = -999, -999, -999
 sm_at_time_of_g, sm, sm_corr = -999, -999, -999
